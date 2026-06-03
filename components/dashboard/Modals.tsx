@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X } from 'lucide-react'
 import { createProduct, createSale, updateProduct } from '@/app/actions'
 
@@ -91,13 +92,29 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
               <>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Seleccionar Producto</label>
-                  <select required name="productId" className="w-full h-9 rounded-md border border-neutral-200 px-3 text-sm focus:border-neutral-900 focus:outline-none bg-white">
-                    {products.map((p: any) => (
-                      <option key={p.id} value={p.id} disabled={p.stock < 1}>
-                        {p.icon ? p.icon + ' ' : ''}{p.name} ({p.salePrice.toFixed(2)} €) - {p.stock} uds
-                      </option>
-                    ))}
-                  </select>
+                  <input type="hidden" name="productId" id="hiddenProductIdSale" />
+                  <Select onValueChange={(val) => {
+                    const el = document.getElementById('hiddenProductIdSale') as HTMLInputElement;
+                    if (el) el.value = val;
+                  }}>
+                    <SelectTrigger className="w-full h-9 rounded-md border-neutral-200 text-sm bg-white shadow-none focus:ring-0">
+                      <SelectValue placeholder="Selecciona...">
+                        {(() => {
+                          const el = document.getElementById('hiddenProductIdSale') as HTMLInputElement;
+                          const selId = el?.value;
+                          const p = products.find((x: any) => x.id.toString() === selId);
+                          return p ? `${p.icon ? p.icon + ' ' : ''}${p.name} (${p.salePrice.toFixed(2)} €)` : 'Selecciona...';
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((p: any) => (
+                        <SelectItem key={p.id} value={p.id.toString()} disabled={p.stock < 1}>
+                          {p.icon ? p.icon + ' ' : ''}{p.name} ({p.salePrice.toFixed(2)} €) - {p.stock} uds
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Cantidad</label>
@@ -122,12 +139,24 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
               <>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Producto a Editar</label>
-                  <select required name="id" value={selectedEditId || ""} onChange={(e) => setSelectedEditId(e.target.value)} className="w-full h-9 rounded-md border border-neutral-200 px-3 text-sm focus:border-neutral-900 focus:outline-none bg-white">
-                    <option value="" disabled>Selecciona...</option>
-                    {products.map((p: any) => (
-                      <option key={p.id} value={p.id}>{p.icon ? p.icon + ' ' : ''}{p.name}</option>
-                    ))}
-                  </select>
+                  <input type="hidden" name="id" value={selectedEditId || ""} />
+                  <Select value={selectedEditId.toString()} onValueChange={(val) => setSelectedEditId(val)}>
+                    <SelectTrigger className="w-full h-9 rounded-md border-neutral-200 text-sm bg-white shadow-none focus:ring-0">
+                      <SelectValue placeholder="Selecciona...">
+                        {(() => {
+                          const p = products.find((x: any) => x.id.toString() === selectedEditId.toString());
+                          return p ? `${p.icon ? p.icon + ' ' : ''}${p.name}` : 'Selecciona...';
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products.map((p: any) => (
+                        <SelectItem key={p.id} value={p.id.toString()}>
+                          {p.icon ? p.icon + ' ' : ''}{p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {productToEdit && (

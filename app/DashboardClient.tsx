@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Printer } from 'lucide-react'
 import { generateProfessionalReport } from '@/utils/exportUtils'
 
@@ -18,6 +19,13 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
   const [selectedEditId, setSelectedEditId] = useState<number | string>("")
   const [activeTab, setActiveTab] = useState<'resumen' | 'inventario' | 'analiticas'>('resumen')
   const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_year'>('this_month')
+
+  const DATE_LABELS: Record<string, string> = {
+    this_month: 'Este Mes',
+    last_month: 'Mes Pasado',
+    this_year: 'Este Año',
+    all: 'Histórico Total'
+  }
 
   const filteredSales = useMemo(() => {
     const now = new Date()
@@ -70,16 +78,19 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
             </div>
             
             <div className="flex items-center gap-2">
-              <select 
-                value={dateFilter} 
-                onChange={(e) => setDateFilter(e.target.value as any)}
-                className="h-8 text-xs rounded-md border border-neutral-200 px-2 font-medium bg-white focus:outline-none focus:border-neutral-900"
-              >
-                <option value="this_month">Este Mes</option>
-                <option value="last_month">Mes Pasado</option>
-                <option value="this_year">Este Año</option>
-                <option value="all">Historico Total</option>
-              </select>
+              <Select value={dateFilter} onValueChange={(val: any) => setDateFilter(val)}>
+                <SelectTrigger className="w-[130px] h-8 text-xs bg-white shadow-none focus:ring-0 focus:ring-offset-0 border-neutral-200">
+                  <SelectValue placeholder="Selecciona">
+                    {DATE_LABELS[dateFilter]}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="this_month" className="text-xs">Este Mes</SelectItem>
+                  <SelectItem value="last_month" className="text-xs">Mes Pasado</SelectItem>
+                  <SelectItem value="this_year" className="text-xs">Este Año</SelectItem>
+                  <SelectItem value="all" className="text-xs">Histórico Total</SelectItem>
+                </SelectContent>
+              </Select>
               
               <Button onClick={() => setActiveModal('sale')} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-4 font-medium shadow-none">
                 Registrar Venta
