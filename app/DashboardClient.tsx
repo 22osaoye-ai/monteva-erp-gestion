@@ -11,9 +11,14 @@ import { SummaryTab } from '@/components/dashboard/SummaryTab'
 import { InventoryTab } from '@/components/dashboard/InventoryTab'
 import { AnalyticsTab } from '@/components/dashboard/AnalyticsTab'
 import { Modals } from '@/components/dashboard/Modals'
+import { deleteSale, clearSalesHistory } from '@/app/actions'
 
 export default function DashboardClient({ initialData }: { initialData: any }) {
-  const { products, sales, totalProfit, totalRevenue, monthlyProfit, monthlyRevenue, annualProfit } = initialData
+  // Estado local mutable — permite updates optimistas sin recarga de página
+  const [sales, setSales] = useState<any[]>(initialData.sales)
+  const [products, setProducts] = useState<any[]>(initialData.products)
+
+  const { annualProfit: initialAnnualProfit } = initialData
 
   const [activeModal, setActiveModal] = useState<'sale' | 'product' | 'editProduct' | 'importExcel' | null>(null)
   const [selectedEditId, setSelectedEditId] = useState<number | string>("")
@@ -43,14 +48,44 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
 
   const dynamicRevenue = filteredSales.reduce((acc: number, s: any) => acc + (s.product.salePrice * s.quantity), 0)
   const dynamicProfit = filteredSales.reduce((acc: number, s: any) => acc + s.orderProfit, 0)
+  const annualProfit = sales.filter((s: any) => new Date(s.date).getFullYear() === new Date().getFullYear())
+    .reduce((acc: number, s: any) => acc + s.orderProfit, 0)
+
+  // ── Handlers optimistas ──────────────────────────────────────────────────
+  async function handleDeleteSale(saleId: number) {
+    // Actualiza UI inmediatamente
+    setSales(prev => prev.filter(s => s.id !== saleId))
+    try {
+      await deleteSale(saleId)
+    } catch {
+      // Revertir si falla
+      setSales(initialData.sales)
+    }
+  }
+
+  async function handleClearHistory() {
+    setSales([])
+    try {
+      await clearSalesHistory()
+    } catch {
+      setSales(initialData.sales)
+    }
+  }
+
+  // Callback para que los modales refresquen el estado local tras crear/editar
+  function handleModalClose(newSale?: any, newProduct?: any, updatedProduct?: any, removedProductId?: number) {
+    if (newSale) setSales(prev => [newSale, ...prev])
+    if (newProduct) setProducts(prev => [...prev, newProduct].sort((a, b) => a.name.localeCompare(b.name)))
+    if (updatedProduct) setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p))
+    if (removedProductId) setProducts(prev => prev.filter(p => p.id !== removedProductId))
+    setActiveModal(null)
+  }
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans">
       
-      {/* NAVEGACIÓN SUPERIOR MINIMALISTA */}
       <TopNav />
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className="bg-white">
         <div className="p-8 md:p-12 max-w-[1400px] mx-auto space-y-10">
           
@@ -101,7 +136,7 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
               <Button onClick={() => setActiveModal('importExcel')} variant="outline" className="rounded-md text-xs h-8 px-3 border-neutral-200 shadow-none font-medium">
                 <FileUp size={14} className="mr-2" /> Importar
               </Button>
-              <Button onClick={() => generateProfessionalReport(sales, initialData)} variant="outline" className="rounded-md text-xs h-8 px-3 border-neutral-200 shadow-none font-medium">
+              <Button onClick={() => generateProfessionalReport(filteredSales, { totalRevenue: dynamicRevenue, totalProfit: dynamicProfit, monthlyRevenue: dynamicRevenue, monthlyProfit: dynamicProfit, periodName: DATE_LABELS[dateFilter] })} variant="outline" className="rounded-md text-xs h-8 px-3 border-neutral-200 shadow-none font-medium">
                 <Printer size={14} className="mr-2" /> PDF
               </Button>
             </div>
@@ -113,8 +148,11 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
               monthlyProfit={dynamicProfit} 
               annualProfit={annualProfit} 
               productsCount={products.length} 
-              sales={filteredSales} 
+              sales={filteredSales}
+              allSales={sales}
               periodName={dateFilter === 'this_month' ? 'Este Mes' : dateFilter === 'last_month' ? 'Mes Pasado' : dateFilter === 'this_year' ? 'Este Año' : 'Total'}
+              onDeleteSale={handleDeleteSale}
+              onClearHistory={handleClearHistory}
             />
           )}
 
@@ -129,15 +167,15 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
             <AnalyticsTab sales={filteredSales} />
           )}
           
-          <div className="h-10"></div> {/* Bottom Padding */}
+          <div className="h-10"></div>
         </div>
       </main>
 
-      {/* MODALES REUTILIZABLES */}
       <Modals 
         activeModal={activeModal} 
-        setActiveModal={setActiveModal} 
-        products={products} 
+        setActiveModal={setActiveModal}
+        onModalClose={handleModalClose}
+        products={products}
         selectedEditId={selectedEditId} 
         setSelectedEditId={setSelectedEditId} 
       />

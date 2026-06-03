@@ -63,7 +63,7 @@ export async function createProduct(formData: FormData) {
   // Fórmula automatizada
   const salePrice = unitCost + (unitCost * margin)
   
-  await prisma.product.create({
+  const created = await prisma.product.create({
     data: {
       name,
       icon: icon || null,
@@ -75,6 +75,7 @@ export async function createProduct(formData: FormData) {
   })
   
   revalidatePath('/')
+  return created
 }
 
 export async function createSale(formData: FormData) {
@@ -92,12 +93,9 @@ export async function createSale(formData: FormData) {
   
   // Registrar venta y actualizar stock al mismo tiempo usando una transacción si quisieramos, 
   // pero lo hacemos secuencial para simplicidad:
-  await prisma.sale.create({
-    data: {
-      productId,
-      quantity,
-      orderProfit
-    }
+  const newSale = await prisma.sale.create({
+    data: { productId, quantity, orderProfit },
+    include: { product: true }
   })
   
   await prisma.product.update({
@@ -106,6 +104,7 @@ export async function createSale(formData: FormData) {
   })
   
   revalidatePath('/')
+  return newSale
 }
 
 export async function updateProduct(formData: FormData) {
@@ -119,7 +118,7 @@ export async function updateProduct(formData: FormData) {
   
   const salePrice = unitCost + (unitCost * margin)
   
-  await prisma.product.update({
+  const updated = await prisma.product.update({
     where: { id },
     data: {
       name,
@@ -132,6 +131,7 @@ export async function updateProduct(formData: FormData) {
   })
   
   revalidatePath('/')
+  return updated
 }
 
 export interface ImportProductRow {
@@ -160,4 +160,14 @@ export async function importProducts(rows: ImportProductRow[]) {
   await prisma.product.createMany({ data })
   revalidatePath('/')
   return { imported: data.length }
+}
+
+export async function deleteSale(saleId: number) {
+  await prisma.sale.delete({ where: { id: saleId } })
+  revalidatePath('/')
+}
+
+export async function clearSalesHistory() {
+  await prisma.sale.deleteMany({})
+  revalidatePath('/')
 }

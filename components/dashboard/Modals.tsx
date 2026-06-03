@@ -12,12 +12,13 @@ type ModalType = 'sale' | 'product' | 'editProduct' | 'importExcel' | null
 interface ModalsProps {
   activeModal: ModalType
   setActiveModal: (val: ModalType) => void
+  onModalClose: (newSale?: any, newProduct?: any, updatedProduct?: any) => void
   products: any[]
   selectedEditId: number | string
   setSelectedEditId: (val: number | string) => void
 }
 
-export function Modals({ activeModal, setActiveModal, products, selectedEditId, setSelectedEditId }: ModalsProps) {
+export function Modals({ activeModal, setActiveModal, onModalClose, products, selectedEditId, setSelectedEditId }: ModalsProps) {
   const productToEdit = products.find((p: any) => p.id.toString() === selectedEditId.toString())
 
   const [iconInput, setIconInput] = useState('')
@@ -49,8 +50,8 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
     }
   }, [activeModal, productToEdit])
 
-  function closeModal() {
-    setActiveModal(null)
+  function closeModal(newSale?: any, newProduct?: any, updatedProduct?: any) {
+    onModalClose(newSale, newProduct, updatedProduct)
     setSelectedProductId('')
     setSaleError('')
     setIsSubmitting(false)
@@ -124,8 +125,8 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
         {/* ── NUEVO PRODUCTO ─────────────────────────────── */}
         {activeModal === 'product' && (
           <form action={async (fd) => {
-            await createProduct(fd)
-            closeModal()
+            const newProduct = await createProduct(fd)
+            closeModal(undefined, newProduct)
           }} className="p-6 space-y-4">
             <div className="space-y-3">
               <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Nombre e Icono</label>
@@ -172,8 +173,8 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
               fd.set('productId', selectedProductId)
               setIsSubmitting(true)
               try {
-                await createSale(fd)
-                closeModal()
+                const newSale = await createSale(fd)
+                closeModal(newSale)
               } catch (err: any) {
                 setSaleError(err?.message || 'Error al registrar la venta.')
               } finally {
@@ -240,8 +241,8 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
         {/* ── EDITAR PRODUCTO ───────────────────────────── */}
         {activeModal === 'editProduct' && (
           <form action={async (fd) => {
-            await updateProduct(fd)
-            closeModal()
+            const updated = await updateProduct(fd)
+            closeModal(undefined, undefined, updated)
           }} className="p-6 space-y-4">
             {products.length === 0 ? (
               <div className="py-4 text-center text-sm text-neutral-500">No hay productos.</div>
