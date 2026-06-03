@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Printer } from 'lucide-react'
 import { generateProfessionalReport } from '@/utils/exportUtils'
@@ -17,6 +17,24 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
   const [activeModal, setActiveModal] = useState<'sale' | 'product' | 'editProduct' | null>(null)
   const [selectedEditId, setSelectedEditId] = useState<number | string>("")
   const [activeTab, setActiveTab] = useState<'resumen' | 'inventario' | 'analiticas'>('resumen')
+  const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_year'>('this_month')
+
+  const filteredSales = useMemo(() => {
+    const now = new Date()
+    return sales.filter((s: any) => {
+      const d = new Date(s.date)
+      if (dateFilter === 'this_month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      if (dateFilter === 'last_month') {
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
+      }
+      if (dateFilter === 'this_year') return d.getFullYear() === now.getFullYear()
+      return true
+    })
+  }, [sales, dateFilter])
+
+  const dynamicRevenue = filteredSales.reduce((acc: number, s: any) => acc + (s.product.salePrice * s.quantity), 0)
+  const dynamicProfit = filteredSales.reduce((acc: number, s: any) => acc + s.orderProfit, 0)
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans">
@@ -52,6 +70,17 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
             </div>
             
             <div className="flex items-center gap-2">
+              <select 
+                value={dateFilter} 
+                onChange={(e) => setDateFilter(e.target.value as any)}
+                className="h-8 text-xs rounded-md border border-neutral-200 px-2 font-medium bg-white focus:outline-none focus:border-neutral-900"
+              >
+                <option value="this_month">Este Mes</option>
+                <option value="last_month">Mes Pasado</option>
+                <option value="this_year">Este Año</option>
+                <option value="all">Historico Total</option>
+              </select>
+              
               <Button onClick={() => setActiveModal('sale')} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-4 font-medium shadow-none">
                 Registrar Venta
               </Button>
@@ -66,11 +95,12 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
 
           {activeTab === 'resumen' && (
             <SummaryTab 
-              monthlyRevenue={monthlyRevenue} 
-              monthlyProfit={monthlyProfit} 
+              monthlyRevenue={dynamicRevenue} 
+              monthlyProfit={dynamicProfit} 
               annualProfit={annualProfit} 
               productsCount={products.length} 
-              sales={sales} 
+              sales={filteredSales} 
+              periodName={dateFilter === 'this_month' ? 'Este Mes' : dateFilter === 'last_month' ? 'Mes Pasado' : dateFilter === 'this_year' ? 'Este Año' : 'Total'}
             />
           )}
 
@@ -82,7 +112,7 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
           )}
 
           {activeTab === 'analiticas' && (
-            <AnalyticsTab sales={sales} />
+            <AnalyticsTab sales={filteredSales} />
           )}
           
           <div className="h-10"></div> {/* Bottom Padding */}

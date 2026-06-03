@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
-import { exportToCSV } from '@/utils/exportUtils'
+import { ArrowUpRight, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
+import { exportToCSV, generateReceiptPDF } from '@/utils/exportUtils'
 
 interface SummaryTabProps {
   monthlyRevenue: number
@@ -9,9 +9,10 @@ interface SummaryTabProps {
   annualProfit: number
   productsCount: number
   sales: any[]
+  periodName: string
 }
 
-export function SummaryTab({ monthlyRevenue, monthlyProfit, annualProfit, productsCount, sales }: SummaryTabProps) {
+export function SummaryTab({ monthlyRevenue, monthlyProfit, annualProfit, productsCount, sales, periodName }: SummaryTabProps) {
   const [salesPage, setSalesPage] = useState(1)
   const ITEMS_PER_PAGE = 7
 
@@ -24,7 +25,7 @@ export function SummaryTab({ monthlyRevenue, monthlyProfit, annualProfit, produc
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         <div className="border-r border-neutral-100 last:border-0 pr-8">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[13px] font-medium text-neutral-600">Ingresos (Mes)</span>
+            <span className="text-[13px] font-medium text-neutral-600">Ingresos ({periodName})</span>
             <ArrowUpRight size={14} className="text-green-500" />
           </div>
           <p className="text-4xl font-normal text-neutral-900 tracking-tight">{monthlyRevenue.toFixed(2)} €</p>
@@ -35,7 +36,7 @@ export function SummaryTab({ monthlyRevenue, monthlyProfit, annualProfit, produc
 
         <div className="border-r border-neutral-100 last:border-0 pr-8">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[13px] font-medium text-neutral-600">Ganancia (Mes)</span>
+            <span className="text-[13px] font-medium text-neutral-600">Ganancia ({periodName})</span>
             <ArrowUpRight size={14} className="text-green-500" />
           </div>
           <p className="text-4xl font-normal text-neutral-900 tracking-tight">{monthlyProfit.toFixed(2)} €</p>
@@ -84,12 +85,13 @@ export function SummaryTab({ monthlyRevenue, monthlyProfit, annualProfit, produc
                 <th className="px-4 py-3 pb-4">Cantidad</th>
                 <th className="px-4 py-3 pb-4">Precio</th>
                 <th className="px-4 py-3 pb-4 text-right">Ganancia</th>
+                <th className="px-4 py-3 pb-4 text-center">Recibo</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {paginatedSales.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-neutral-400">Sin datos de ventas.</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-neutral-400">Sin datos de ventas en este período.</td>
                 </tr>
               ) : (
                 paginatedSales.map((sale: any) => (
@@ -107,6 +109,15 @@ export function SummaryTab({ monthlyRevenue, monthlyProfit, annualProfit, produc
                     <td className="px-4 py-3.5 text-neutral-600 text-[13px]">{sale.product.salePrice.toFixed(2)} €</td>
                     <td className="px-4 py-3.5 text-right font-medium text-emerald-600 text-[13px]">
                       +{sale.orderProfit.toFixed(2)} €
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
+                      <button 
+                        onClick={() => generateReceiptPDF(sale)} 
+                        title="Generar Recibo PDF"
+                        className="p-1.5 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors"
+                      >
+                        <FileText size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))
