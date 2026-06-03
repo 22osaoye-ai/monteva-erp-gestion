@@ -133,3 +133,31 @@ export async function updateProduct(formData: FormData) {
   
   revalidatePath('/')
 }
+
+export interface ImportProductRow {
+  name: string
+  icon?: string
+  unitCost: number
+  margin: number   // porcentaje, ej: 30 → se convierte a 0.3
+  stock: number
+}
+
+export async function importProducts(rows: ImportProductRow[]) {
+  if (!rows.length) throw new Error('No hay filas para importar')
+
+  const data = rows.map(r => {
+    const margin = r.margin / 100
+    return {
+      name: r.name.trim(),
+      icon: r.icon?.trim() || null,
+      unitCost: r.unitCost,
+      margin,
+      salePrice: r.unitCost + r.unitCost * margin,
+      stock: Math.max(0, r.stock),
+    }
+  })
+
+  await prisma.product.createMany({ data })
+  revalidatePath('/')
+  return { imported: data.length }
+}

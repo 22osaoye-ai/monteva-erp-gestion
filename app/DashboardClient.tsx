@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Printer } from 'lucide-react'
+import { Printer, FileUp } from 'lucide-react'
 import { generateProfessionalReport } from '@/utils/exportUtils'
 
 import { TopNav } from '@/components/dashboard/TopNav'
@@ -15,7 +15,7 @@ import { Modals } from '@/components/dashboard/Modals'
 export default function DashboardClient({ initialData }: { initialData: any }) {
   const { products, sales, totalProfit, totalRevenue, monthlyProfit, monthlyRevenue, annualProfit } = initialData
 
-  const [activeModal, setActiveModal] = useState<'sale' | 'product' | 'editProduct' | null>(null)
+  const [activeModal, setActiveModal] = useState<'sale' | 'product' | 'editProduct' | 'importExcel' | null>(null)
   const [selectedEditId, setSelectedEditId] = useState<number | string>("")
   const [activeTab, setActiveTab] = useState<'resumen' | 'inventario' | 'analiticas'>('resumen')
   const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_month' | 'this_year'>('this_month')
@@ -97,6 +97,9 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
               </Button>
               <Button onClick={() => setActiveModal('product')} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-4 font-medium shadow-none">
                 Nuevo Producto
+              </Button>
+              <Button onClick={() => setActiveModal('importExcel')} variant="outline" className="rounded-md text-xs h-8 px-3 border-neutral-200 shadow-none font-medium">
+                <FileUp size={14} className="mr-2" /> Importar
               </Button>
               <Button onClick={() => generateProfessionalReport(sales, initialData)} variant="outline" className="rounded-md text-xs h-8 px-3 border-neutral-200 shadow-none font-medium">
                 <Printer size={14} className="mr-2" /> PDF
