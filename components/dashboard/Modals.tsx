@@ -12,8 +12,6 @@ interface ModalsProps {
 }
 
 export function Modals({ activeModal, setActiveModal, products, selectedEditId, setSelectedEditId }: ModalsProps) {
-  if (!activeModal) return null
-
   const productToEdit = products.find((p: any) => p.id.toString() === selectedEditId.toString())
 
   const [iconInput, setIconInput] = useState('')
@@ -25,6 +23,8 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
       setIconInput('')
     }
   }, [activeModal, productToEdit])
+
+  if (!activeModal) return null
 
   const SUGGESTED_ICONS = ['📦', '👕', '☕', '🍔', '📱', '🚗', '🔧', '🎮', '🪴', '📚', '💄', '💊']
 
