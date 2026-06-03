@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db" // Por defecto será "file:./dev.db"
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  icon        String?  // Emoji o nombre de icono
+  unitCost    Float
+  margin      Float    // Ejemplo: 0.3 para 30%
+  salePrice   Float
+  stock       Int      @default(0) // Control de inventario
+  sales       Sale[]
+}
+
+model Sale {
+  id            Int      @id @default(autoincrement())
+  date          DateTime @default(now())
+  quantity      Int
+  orderProfit   Float
+  
+  // Relación con el producto
+  productId     Int
+  product       Product  @relation(fields: [productId], references: [id])
+}
