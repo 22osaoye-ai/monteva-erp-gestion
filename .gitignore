@@ -30,16 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — .env es plantilla pública (sin credenciales reales)
-# .env.local tiene las credenciales reales y NO debe subirse
+# env files — NUNCA subir a git (contienen credenciales reales)
+# Configura las variables directamente en Vercel Dashboard
+.env
+.env*
 .env.local
 .env*.local
-
-# SQLite local — no subir el binario de la DB
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
 
 # vercel
 .vercel
