@@ -93,7 +93,7 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Seleccionar Producto</label>
                   <input type="hidden" name="productId" id="hiddenProductIdSale" />
-                  <Select onValueChange={(val: string) => {
+                  <Select onValueChange={(val: string | null) => {
                     const el = document.getElementById('hiddenProductIdSale') as HTMLInputElement;
                     if (el) el.value = val || '';
                   }}>
@@ -140,7 +140,7 @@ export function Modals({ activeModal, setActiveModal, products, selectedEditId, 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Producto a Editar</label>
                   <input type="hidden" name="id" value={selectedEditId || ""} />
-                  <Select value={selectedEditId.toString()} onValueChange={(val) => setSelectedEditId(val)}>
+                  <Select value={selectedEditId.toString()} onValueChange={(val: string | null) => setSelectedEditId(val || '')}>
                     <SelectTrigger className="w-full h-9 rounded-md border-neutral-200 text-sm bg-white shadow-none focus:ring-0">
                       <SelectValue placeholder="Selecciona...">
                         {(() => {
