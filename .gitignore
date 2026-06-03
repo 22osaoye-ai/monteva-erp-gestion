@@ -30,8 +30,16 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — .env es plantilla pública (sin credenciales reales)
+# .env.local tiene las credenciales reales y NO debe subirse
+.env.local
+.env*.local
+
+# SQLite local — no subir el binario de la DB
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
 
 # vercel
 .vercel
