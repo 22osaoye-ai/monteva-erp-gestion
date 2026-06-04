@@ -60,8 +60,9 @@ export async function createProduct(formData: FormData) {
   const margin = parseFloat(marginStr) / 100 // convert 30 to 0.3
   const stock = parseInt((formData.get('stock') as string) || "0")
   
-  // Fórmula automatizada
-  const salePrice = unitCost + (unitCost * margin)
+  // Fórmula automatizada: Margen Comercial (PVP = Costo / (1 - Margen))
+  // Si el margen es mayor o igual a 1 (100% o más), se hace un recargo directo (markup) para evitar errores matemáticos.
+  const salePrice = margin >= 1 ? unitCost + (unitCost * margin) : unitCost / (1 - margin)
   
   const created = await prisma.product.create({
     data: {
@@ -116,7 +117,8 @@ export async function updateProduct(formData: FormData) {
   const margin = parseFloat(marginStr) / 100
   const stock = parseInt((formData.get('stock') as string) || "0")
   
-  const salePrice = unitCost + (unitCost * margin)
+  // Fórmula automatizada: Margen Comercial
+  const salePrice = margin >= 1 ? unitCost + (unitCost * margin) : unitCost / (1 - margin)
   
   const updated = await prisma.product.update({
     where: { id },
@@ -152,7 +154,7 @@ export async function importProducts(rows: ImportProductRow[]) {
       icon: r.icon?.trim() || null,
       unitCost: r.unitCost,
       margin,
-      salePrice: r.unitCost + r.unitCost * margin,
+      salePrice: margin >= 1 ? r.unitCost + (r.unitCost * margin) : r.unitCost / (1 - margin),
       stock: Math.max(0, r.stock),
     }
   })
