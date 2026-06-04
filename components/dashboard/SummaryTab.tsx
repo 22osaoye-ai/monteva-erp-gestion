@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowUpRight, ChevronLeft, ChevronRight, FileText, Trash2, AlertTriangle } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { ArrowUpRight, ChevronLeft, ChevronRight, FileText, Trash2, AlertTriangle, Search } from 'lucide-react'
 import { exportToCSV, generateReceiptPDF } from '@/utils/exportUtils'
 
 interface SummaryTabProps {
@@ -25,10 +26,21 @@ export function SummaryTab({
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [clearingAll, setClearingAll] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const ITEMS_PER_PAGE = 8
 
-  const totalSalesPages = Math.ceil(sales.length / ITEMS_PER_PAGE) || 1
-  const paginatedSales = sales.slice((salesPage - 1) * ITEMS_PER_PAGE, salesPage * ITEMS_PER_PAGE)
+  const filteredSales = useMemo(() => {
+    return sales.filter((s: any) => 
+      s.product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [sales, searchTerm])
+
+  const totalSalesPages = Math.ceil(filteredSales.length / ITEMS_PER_PAGE) || 1
+  const paginatedSales = filteredSales.slice((salesPage - 1) * ITEMS_PER_PAGE, salesPage * ITEMS_PER_PAGE)
+
+  useEffect(() => {
+    setSalesPage(1)
+  }, [searchTerm])
 
   async function handleDelete(id: number) {
     setDeletingId(id)
@@ -98,16 +110,28 @@ export function SummaryTab({
 
       {/* HISTORIAL DE VENTAS */}
       <div className="mt-16">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-widest">Historial de Ventas</h3>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => exportToCSV(sales)} variant="ghost" className="text-xs h-7 px-2 text-neutral-500 hover:text-neutral-900">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <h3 className="text-sm font-semibold text-neutral-900 uppercase tracking-widest whitespace-nowrap">Historial de Ventas</h3>
+          
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative w-full md:w-64 md:mr-2">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-500" />
+              <Input
+                type="text"
+                placeholder="Buscar venta por producto..."
+                className="pl-9 h-9 text-xs shadow-none border-neutral-200 focus-visible:ring-1 focus-visible:ring-neutral-900"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <Button onClick={() => exportToCSV(filteredSales)} variant="ghost" className="text-xs h-9 px-3 text-neutral-500 hover:text-neutral-900 whitespace-nowrap border border-transparent hover:bg-neutral-50">
               Descargar CSV
             </Button>
             {sales.length > 0 && (
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-red-500 transition-colors px-2 h-7 rounded-md hover:bg-red-50"
+                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-red-500 transition-colors px-2 h-9 rounded-md hover:bg-red-50 whitespace-nowrap"
               >
                 <Trash2 size={13} />
                 Borrar historial
@@ -207,9 +231,9 @@ export function SummaryTab({
             </tbody>
           </table>
           
-          {sales.length > 0 && (
+          {filteredSales.length > 0 && (
             <div className="flex items-center justify-between py-4 text-xs text-neutral-500">
-              <span>{sales.length} registro{sales.length !== 1 ? 's' : ''}</span>
+              <span>{filteredSales.length} registro{filteredSales.length !== 1 ? 's' : ''}</span>
               <div className="flex items-center gap-2">
                 <button onClick={() => setSalesPage(p => Math.max(1, p - 1))} disabled={salesPage === 1} className="p-1 rounded-md hover:bg-neutral-100 disabled:opacity-30 transition-colors">
                   <ChevronLeft size={16} />
