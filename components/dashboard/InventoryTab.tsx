@@ -50,7 +50,7 @@ export function InventoryTab({ products, onEditCatalog }: InventoryTabProps) {
             />
           </div>
           
-          <Select value={stockFilter} onValueChange={setStockFilter}>
+          <Select value={stockFilter} onValueChange={(val: any) => setStockFilter(val || 'all')}>
             <SelectTrigger className="w-[140px] h-9 text-xs bg-white shadow-none focus:ring-0 focus:ring-offset-0 border-neutral-200">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
