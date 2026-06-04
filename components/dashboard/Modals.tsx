@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X, AlertCircle, Upload, FileSpreadsheet, CheckCircle2, Download, TriangleAlert } from 'lucide-react'
-import { createProduct, createSale, updateProduct, importProducts } from '@/app/actions'
+import { createProduct, createSale, updateProduct, importProducts, deleteProduct } from '@/app/actions'
 import { parseImportFile, downloadTemplate, type ImportedProductRow } from '@/utils/importUtils'
 
 type ModalType = 'sale' | 'product' | 'editProduct' | 'importExcel' | null
@@ -12,7 +12,7 @@ type ModalType = 'sale' | 'product' | 'editProduct' | 'importExcel' | null
 interface ModalsProps {
   activeModal: ModalType
   setActiveModal: (val: ModalType) => void
-  onModalClose: (newSale?: any, newProduct?: any, updatedProduct?: any) => void
+  onModalClose: (newSale?: any, newProduct?: any, updatedProduct?: any, removedProductId?: number) => void
   products: any[]
   selectedEditId: number | string
   setSelectedEditId: (val: number | string) => void
@@ -25,6 +25,7 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
   const [selectedProductId, setSelectedProductId] = useState('')
   const [saleError, setSaleError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Import state
   const [importRows, setImportRows] = useState<ImportedProductRow[]>([])
@@ -50,11 +51,12 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
     }
   }, [activeModal, productToEdit])
 
-  function closeModal(newSale?: any, newProduct?: any, updatedProduct?: any) {
-    onModalClose(newSale, newProduct, updatedProduct)
+  function closeModal(newSale?: any, newProduct?: any, updatedProduct?: any, removedProductId?: number) {
+    onModalClose(newSale, newProduct, updatedProduct, removedProductId)
     setSelectedProductId('')
     setSaleError('')
     setIsSubmitting(false)
+    setIsDeleting(false)
     setImportRows([])
     setImportError('')
     setImportSuccess('')
@@ -303,8 +305,30 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
                   </>
                 )}
 
-                <div className="pt-4 flex justify-end">
-                  <Button type="submit" disabled={!productToEdit} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-6 disabled:opacity-50">Actualizar</Button>
+                <div className="pt-4 flex justify-between items-center">
+                  <Button 
+                    type="button" 
+                    onClick={async () => {
+                      if (!productToEdit) return;
+                      if (!confirm('¿Estás seguro de que deseas eliminar este producto y todo su historial de ventas?')) return;
+                      setIsDeleting(true);
+                      try {
+                        await deleteProduct(productToEdit.id);
+                        closeModal(undefined, undefined, undefined, productToEdit.id);
+                      } catch (e: any) {
+                        alert(e.message || 'Error al eliminar producto');
+                        setIsDeleting(false);
+                      }
+                    }}
+                    disabled={!productToEdit || isSubmitting || isDeleting} 
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md text-xs h-8 px-4"
+                  >
+                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                  </Button>
+                  <Button type="submit" disabled={!productToEdit || isSubmitting || isDeleting} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-6 disabled:opacity-50">
+                    Actualizar
+                  </Button>
                 </div>
               </>
             )}

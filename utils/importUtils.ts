@@ -30,19 +30,32 @@ function normalizeKey(k: string): string {
 }
 
 const KEY_MAP: Record<string, keyof ImportedProductRow | null> = {
-  nombre: 'name', name: 'name', producto: 'name',
-  icono: 'icon', icon: 'icon', emoji: 'icon',
+  nombre: 'name', name: 'name', producto: 'name', articulo: 'name', descripcion: 'name', description: 'name', item: 'name', title: 'name',
+  icono: 'icon', icon: 'icon', emoji: 'icon', imagen: 'icon',
   costo: 'unitCost', coste: 'unitCost', unitcost: 'unitCost',
-  cost: 'unitCost', precio_costo: 'unitCost', precio_compra: 'unitCost',
-  margen: 'margin', margin: 'margin', margen_porcentaje: 'margin',
-  stock: 'stock', existencias: 'stock', cantidad: 'stock', inventory: 'stock',
+  cost: 'unitCost', precio_costo: 'unitCost', precio_compra: 'unitCost', preciocosto: 'unitCost',
+  margen: 'margin', margin: 'margin', margen_porcentaje: 'margin', porcentaje: 'margin', beneficio: 'margin', ganancia: 'margin',
+  stock: 'stock', existencias: 'stock', cantidad: 'stock', inventory: 'stock', inventario: 'stock', qty: 'stock',
 }
 
 function mapHeaders(headers: string[]): Record<string, keyof ImportedProductRow | null> {
   const map: Record<string, keyof ImportedProductRow | null> = {}
   headers.forEach(h => {
     const nk = normalizeKey(h)
-    map[h] = KEY_MAP[nk] ?? null
+    let field: keyof ImportedProductRow | null = null
+    
+    if (KEY_MAP[nk]) {
+      field = KEY_MAP[nk]
+    } else {
+      // Partial matching for better flexibility with arbitrary Excels
+      if (nk.includes('nombre') || nk.includes('producto') || nk.includes('articulo') || nk.includes('descripcion') || nk.includes('item')) field = 'name'
+      else if (nk.includes('costo') || nk.includes('coste') || nk.includes('compra')) field = 'unitCost'
+      else if (nk.includes('margen') || nk.includes('beneficio') || nk.includes('ganancia') || nk.includes('porcentaje')) field = 'margin'
+      else if (nk.includes('stock') || nk.includes('existencia') || nk.includes('cantidad') || nk.includes('inventario') || nk.includes('qty')) field = 'stock'
+      else if (nk.includes('icono') || nk.includes('emoji') || nk.includes('imagen')) field = 'icon'
+    }
+    
+    map[h] = field
   })
   return map
 }

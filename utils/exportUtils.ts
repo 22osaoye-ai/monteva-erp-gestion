@@ -14,13 +14,14 @@ export const exportToCSV = (sales: any[]) => {
 
 // ─── Colores corporativos ────────────────────────────────────────────────────
 const BRAND = {
-  black: [15, 15, 15] as [number, number, number],
-  darkGray: [45, 45, 45] as [number, number, number],
-  midGray: [110, 110, 110] as [number, number, number],
-  lightGray: [210, 210, 210] as [number, number, number],
-  ultraLight: [248, 248, 248] as [number, number, number],
-  green: [34, 197, 94] as [number, number, number],
+  primary: [15, 23, 42] as [number, number, number], // slate-900
+  accent: [59, 130, 246] as [number, number, number], // blue-500
+  textDark: [30, 41, 59] as [number, number, number], // slate-800
+  textMuted: [100, 116, 139] as [number, number, number], // slate-500
+  bgLight: [248, 250, 252] as [number, number, number], // slate-50
+  border: [226, 232, 240] as [number, number, number], // slate-200
   white: [255, 255, 255] as [number, number, number],
+  success: [16, 185, 129] as [number, number, number], // emerald-500
 }
 
 export const generateProfessionalReport = async (sales: any[], stats: any) => {
@@ -33,124 +34,152 @@ export const generateProfessionalReport = async (sales: any[], stats: any) => {
     const pageH = doc.internal.pageSize.getHeight()
 
     // ── HEADER BAND ─────────────────────────────────────────────────────────
-    doc.setFillColor(...BRAND.black)
-    doc.rect(0, 0, pageW, 48, 'F')
+    doc.setFillColor(...BRAND.primary)
+    doc.rect(0, 0, pageW, 55, 'F')
+    
+    // Accent line
+    doc.setFillColor(...BRAND.accent)
+    doc.rect(0, 55, pageW, 2, 'F')
 
     // Logo / Brand
-    doc.setFontSize(26)
+    doc.setFontSize(28)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...BRAND.white)
-    doc.text('Monteva', 14, 24)
+    doc.text('MONTEVA', 20, 30)
 
-    doc.setFontSize(9)
+    doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...BRAND.lightGray)
-    doc.text('REPORTE FINANCIERO', 14, 33)
+    doc.setTextColor(148, 163, 184) // slate-400
+    doc.text('ERP SYSTEM', 20, 40)
 
-    // Fecha y periodo
+    // Report Title
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...BRAND.white)
+    doc.text('Reporte Financiero', pageW - 20, 26, { align: 'right' })
+
     const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
     const periodStr = stats.periodName ?? 'Histórico'
-    doc.setFontSize(8)
-    doc.setTextColor(...BRAND.lightGray)
-    doc.text(`Generado: ${dateStr}`, pageW - 14, 22, { align: 'right' })
-    doc.text(`Período: ${periodStr}`, pageW - 14, 30, { align: 'right' })
+    
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(148, 163, 184)
+    doc.text(`Período: ${periodStr}`, pageW - 20, 36, { align: 'right' })
+    doc.text(`Generado: ${dateStr}`, pageW - 20, 44, { align: 'right' })
 
     // ── KPI CARDS ROW ────────────────────────────────────────────────────────
     const kpis = [
-      { label: 'INGRESOS', value: `${(stats.totalRevenue ?? stats.monthlyRevenue ?? 0).toFixed(2)} €` },
-      { label: 'GANANCIA NETA', value: `${(stats.totalProfit ?? stats.monthlyProfit ?? 0).toFixed(2)} €` },
-      { label: 'VENTAS', value: `${sales.length}` },
+      { label: 'INGRESOS TOTALES', value: `${(stats.totalRevenue ?? stats.monthlyRevenue ?? 0).toFixed(2)} €` },
+      { label: 'GANANCIA NETA', value: `${(stats.totalProfit ?? stats.monthlyProfit ?? 0).toFixed(2)} €`, highlight: true },
+      { label: 'VENTAS REGISTRADAS', value: `${sales.length}` },
     ]
 
-    const cardY = 58
-    const cardH = 28
-    const cardGap = 4
-    const cardW = (pageW - 28 - cardGap * (kpis.length - 1)) / kpis.length
+    const cardY = 70
+    const cardH = 32
+    const cardGap = 8
+    const cardW = (pageW - 40 - cardGap * (kpis.length - 1)) / kpis.length
 
     kpis.forEach((kpi, i) => {
-      const x = 14 + i * (cardW + cardGap)
-      doc.setFillColor(...BRAND.ultraLight)
-      doc.roundedRect(x, cardY, cardW, cardH, 2, 2, 'F')
+      const x = 20 + i * (cardW + cardGap)
+      
+      // Card background
+      doc.setFillColor(...BRAND.bgLight)
+      doc.setDrawColor(...BRAND.border)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(x, cardY, cardW, cardH, 3, 3, 'FD')
 
-      doc.setFontSize(7)
+      doc.setFontSize(8)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...BRAND.midGray)
-      doc.text(kpi.label, x + 8, cardY + 9)
+      doc.setTextColor(...BRAND.textMuted)
+      doc.text(kpi.label, x + 10, cardY + 12)
 
-      doc.setFontSize(15)
+      doc.setFontSize(16)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...BRAND.black)
-      doc.text(kpi.value, x + 8, cardY + 22)
+      doc.setTextColor(...(kpi.highlight ? BRAND.success : BRAND.textDark))
+      doc.text(kpi.value, x + 10, cardY + 24)
     })
 
     // ── TABLA DE VENTAS ──────────────────────────────────────────────────────
-    const tableY = cardY + cardH + 14
+    const tableY = cardY + cardH + 16
 
-    doc.setFontSize(9)
+    doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...BRAND.darkGray)
-    doc.text('DETALLE DE VENTAS', 14, tableY - 4)
+    doc.setTextColor(...BRAND.textDark)
+    doc.text('Detalle de Movimientos', 20, tableY - 6)
 
     autoTable(doc, {
       startY: tableY,
       head: [['Fecha', 'Producto', 'Cant.', 'Precio Unit.', 'Ingreso', 'Ganancia']],
-      body: sales.slice(0, 40).map((s: any) => [
-        new Date(s.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' }),
-        s.product.name.length > 32 ? s.product.name.slice(0, 32) + '…' : s.product.name,
+      body: sales.slice(0, 50).map((s: any) => [
+        new Date(s.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+        s.product.name.length > 35 ? s.product.name.slice(0, 35) + '…' : s.product.name,
         s.quantity.toString(),
         `${s.product.salePrice.toFixed(2)} €`,
         `${(s.product.salePrice * s.quantity).toFixed(2)} €`,
         `${s.orderProfit.toFixed(2)} €`,
       ]),
-      theme: 'plain',
+      theme: 'grid',
       headStyles: {
-        fillColor: BRAND.black,
+        fillColor: BRAND.primary,
         textColor: BRAND.white,
-        fontSize: 7.5,
+        fontSize: 8.5,
         fontStyle: 'bold',
-        cellPadding: { top: 5, bottom: 5, left: 6, right: 6 },
+        cellPadding: { top: 6, bottom: 6, left: 8, right: 8 },
+        lineColor: BRAND.primary,
+        lineWidth: 0.1,
       },
       bodyStyles: {
-        fontSize: 8,
-        textColor: BRAND.darkGray,
-        cellPadding: { top: 4, bottom: 4, left: 6, right: 6 },
+        fontSize: 8.5,
+        textColor: BRAND.textDark,
+        cellPadding: { top: 5, bottom: 5, left: 8, right: 8 },
+        lineColor: BRAND.border,
+        lineWidth: 0.1,
       },
-      alternateRowStyles: { fillColor: BRAND.ultraLight },
+      alternateRowStyles: { fillColor: BRAND.bgLight },
       columnStyles: {
-        0: { cellWidth: 22 },
+        0: { cellWidth: 26 },
         1: { cellWidth: 'auto' },
-        2: { cellWidth: 14, halign: 'center' },
+        2: { cellWidth: 16, halign: 'center' },
         3: { cellWidth: 26, halign: 'right' },
         4: { cellWidth: 26, halign: 'right' },
-        5: { cellWidth: 26, halign: 'right', textColor: [22, 163, 74] },
+        5: { cellWidth: 26, halign: 'right', textColor: BRAND.success, fontStyle: 'bold' },
       },
+      margin: { left: 20, right: 20 },
       didDrawPage: (data: any) => {
         // Footer en cada página
-        doc.setFillColor(...BRAND.ultraLight)
-        doc.rect(0, pageH - 14, pageW, 14, 'F')
-        doc.setFontSize(7)
+        doc.setFillColor(...BRAND.bgLight)
+        doc.rect(0, pageH - 16, pageW, 16, 'F')
+        
+        doc.setDrawColor(...BRAND.border)
+        doc.setLineWidth(0.3)
+        doc.line(0, pageH - 16, pageW, pageH - 16)
+        
+        doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
-        doc.setTextColor(...BRAND.midGray)
-        doc.text('Monteva ERP — Confidencial', 14, pageH - 5)
-        doc.text(`Página ${data.pageNumber}`, pageW - 14, pageH - 5, { align: 'right' })
+        doc.setTextColor(...BRAND.textMuted)
+        doc.text('Monteva ERP — Documento Confidencial', 20, pageH - 6)
+        doc.text(`Página ${data.pageNumber}`, pageW - 20, pageH - 6, { align: 'right' })
       }
     })
 
     // ── RESUMEN FINAL ────────────────────────────────────────────────────────
     const finalY = (doc as any).lastAutoTable.finalY || tableY + 80
 
-    if (finalY + 30 < pageH - 20) {
-      doc.setDrawColor(...BRAND.lightGray)
+    if (finalY + 40 < pageH - 20) {
+      doc.setFillColor(...BRAND.bgLight)
+      doc.setDrawColor(...BRAND.border)
       doc.setLineWidth(0.3)
-      doc.line(14, finalY + 8, pageW - 14, finalY + 8)
+      doc.roundedRect(pageW - 90, finalY + 12, 70, 24, 3, 3, 'FD')
 
-      doc.setFontSize(8)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...BRAND.textMuted)
+      doc.text('TOTAL GANANCIA NETA', pageW - 28, finalY + 22, { align: 'right' })
+      
+      doc.setFontSize(14)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...BRAND.darkGray)
-      doc.text('TOTAL GANANCIA:', 14, finalY + 18)
-      doc.setFontSize(13)
-      doc.setTextColor(22, 163, 74)
-      doc.text(`${sales.reduce((a: number, s: any) => a + s.orderProfit, 0).toFixed(2)} €`, pageW - 14, finalY + 18, { align: 'right' })
+      doc.setTextColor(...BRAND.success)
+      doc.text(`${sales.reduce((a: number, s: any) => a + s.orderProfit, 0).toFixed(2)} €`, pageW - 28, finalY + 30, { align: 'right' })
     }
 
     doc.save(`Monteva_Reporte_${new Date().toISOString().slice(0, 10)}.pdf`)

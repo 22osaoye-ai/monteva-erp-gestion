@@ -171,3 +171,10 @@ export async function clearSalesHistory() {
   await prisma.sale.deleteMany({})
   revalidatePath('/')
 }
+
+export async function deleteProduct(productId: number) {
+  await prisma.sale.deleteMany({ where: { productId } })
+  await prisma.product.delete({ where: { id: productId } })
+  revalidatePath('/')
+  return { success: true }
+}
