@@ -56,7 +56,10 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
     // Actualiza UI inmediatamente
     setSales(prev => prev.filter(s => s.id !== saleId))
     try {
-      await deleteSale(saleId)
+      const res = await deleteSale(saleId)
+      if (res && !res.success) {
+        setSales(initialData.sales)
+      }
     } catch {
       // Revertir si falla
       setSales(initialData.sales)
@@ -66,7 +69,10 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
   async function handleClearHistory() {
     setSales([])
     try {
-      await clearSalesHistory()
+      const res = await clearSalesHistory()
+      if (res && !res.success) {
+        setSales(initialData.sales)
+      }
     } catch {
       setSales(initialData.sales)
     }

@@ -24,6 +24,8 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
   const [iconInput, setIconInput] = useState('')
   const [selectedProductId, setSelectedProductId] = useState('')
   const [saleError, setSaleError] = useState('')
+  const [productError, setProductError] = useState('')
+  const [editProductError, setEditProductError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -36,6 +38,8 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    setProductError('')
+    setEditProductError('')
     if (activeModal === 'editProduct' && productToEdit) {
       setIconInput(productToEdit.icon || '')
     } else if (activeModal === 'product') {
@@ -55,6 +59,8 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
     onModalClose(newSale, newProduct, updatedProduct, removedProductId)
     setSelectedProductId('')
     setSaleError('')
+    setProductError('')
+    setEditProductError('')
     setIsSubmitting(false)
     setIsDeleting(false)
     setImportRows([])
@@ -88,10 +94,15 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
     setIsSubmitting(true)
     setImportError('')
     try {
-      const result = await importProducts(validRows)
-      setImportSuccess(`✅ ${result.imported} producto${result.imported !== 1 ? 's' : ''} importado${result.imported !== 1 ? 's' : ''} correctamente.`)
-      setImportRows([])
-      setTimeout(() => closeModal(), 2000)
+      const res = await importProducts(validRows)
+      if (res && !res.success) {
+        setImportError(res.error || 'Error al importar.')
+      } else {
+        const importedCount = res && 'imported' in res ? res.imported : validRows.length
+        setImportSuccess(`✅ ${importedCount} producto${importedCount !== 1 ? 's' : ''} importado${importedCount !== 1 ? 's' : ''} correctamente.`)
+        setImportRows([])
+        setTimeout(() => closeModal(), 2000)
+      }
     } catch (e: any) {
       setImportError(e?.message || 'Error al importar.')
     } finally {
@@ -126,10 +137,27 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
 
         {/* ── NUEVO PRODUCTO ─────────────────────────────── */}
         {activeModal === 'product' && (
-          <form action={async (fd) => {
-            const newProduct = await createProduct(fd)
-            closeModal(undefined, newProduct)
-          }} className="p-6 space-y-4">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setProductError('')
+              setIsSubmitting(true)
+              const fd = new FormData(e.currentTarget)
+              try {
+                const res = await createProduct(fd)
+                if (res && !res.success) {
+                  setProductError(res.error || 'Error al crear el producto.')
+                } else {
+                  closeModal(undefined, res.data)
+                }
+              } catch (err: any) {
+                setProductError(err?.message || 'Error al crear el producto.')
+              } finally {
+                setIsSubmitting(false)
+              }
+            }}
+            className="p-6 space-y-4"
+          >
             <div className="space-y-3">
               <label className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">Nombre e Icono</label>
               <div className="flex gap-3">
@@ -158,8 +186,17 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
                 <input required name="stock" type="number" defaultValue="0" className="w-full h-9 rounded-md border border-neutral-200 px-3 text-sm focus:border-neutral-900 focus:outline-none" />
               </div>
             </div>
+
+            {productError && (
+              <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600 animate-in fade-in duration-200">
+                <AlertCircle size={13} />{productError}
+              </div>
+            )}
+
             <div className="pt-4 flex justify-end">
-              <Button type="submit" className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-6">Guardar</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-6 disabled:opacity-50">
+                {isSubmitting ? 'Guardando...' : 'Guardar'}
+              </Button>
             </div>
           </form>
         )}
@@ -175,8 +212,12 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
               fd.set('productId', selectedProductId)
               setIsSubmitting(true)
               try {
-                const newSale = await createSale(fd)
-                closeModal(newSale)
+                const res = await createSale(fd)
+                if (res && !res.success) {
+                  setSaleError(res.error || 'Error al registrar la venta.')
+                } else {
+                  closeModal(res.data)
+                }
               } catch (err: any) {
                 setSaleError(err?.message || 'Error al registrar la venta.')
               } finally {
@@ -242,10 +283,27 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
 
         {/* ── EDITAR PRODUCTO ───────────────────────────── */}
         {activeModal === 'editProduct' && (
-          <form action={async (fd) => {
-            const updated = await updateProduct(fd)
-            closeModal(undefined, undefined, updated)
-          }} className="p-6 space-y-4">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setEditProductError('')
+              setIsSubmitting(true)
+              const fd = new FormData(e.currentTarget)
+              try {
+                const res = await updateProduct(fd)
+                if (res && !res.success) {
+                  setEditProductError(res.error || 'Error al actualizar el producto.')
+                } else {
+                  closeModal(undefined, undefined, res.data)
+                }
+              } catch (err: any) {
+                setEditProductError(err?.message || 'Error al actualizar el producto.')
+              } finally {
+                setIsSubmitting(false)
+              }
+            }}
+            className="p-6 space-y-4"
+          >
             {products.length === 0 ? (
               <div className="py-4 text-center text-sm text-neutral-500">No hay productos.</div>
             ) : (
@@ -305,6 +363,12 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
                   </>
                 )}
 
+                {editProductError && (
+                  <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600 animate-in fade-in duration-200">
+                    <AlertCircle size={13} />{editProductError}
+                  </div>
+                )}
+
                 <div className="pt-4 flex justify-between items-center">
                   <Button 
                     type="button" 
@@ -313,8 +377,13 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
                       if (!confirm('¿Estás seguro de que deseas eliminar este producto y todo su historial de ventas?')) return;
                       setIsDeleting(true);
                       try {
-                        await deleteProduct(productToEdit.id);
-                        closeModal(undefined, undefined, undefined, productToEdit.id);
+                        const res = await deleteProduct(productToEdit.id);
+                        if (res && !res.success) {
+                          alert(res.error || 'Error al eliminar producto');
+                          setIsDeleting(false);
+                        } else {
+                          closeModal(undefined, undefined, undefined, productToEdit.id);
+                        }
                       } catch (e: any) {
                         alert(e.message || 'Error al eliminar producto');
                         setIsDeleting(false);
@@ -327,7 +396,7 @@ export function Modals({ activeModal, setActiveModal, onModalClose, products, se
                     {isDeleting ? 'Eliminando...' : 'Eliminar'}
                   </Button>
                   <Button type="submit" disabled={!productToEdit || isSubmitting || isDeleting} className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-md text-xs h-8 px-6 disabled:opacity-50">
-                    Actualizar
+                    {isSubmitting ? 'Guardando...' : 'Actualizar'}
                   </Button>
                 </div>
               </>
