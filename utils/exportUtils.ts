@@ -12,16 +12,29 @@ export const exportToCSV = (sales: any[]) => {
   a.click()
 }
 
-// ─── Colores corporativos ────────────────────────────────────────────────────
+// ─── Colores corporativos (minimalistas y premium matching con la plataforma) ───
 const BRAND = {
-  primary: [15, 23, 42] as [number, number, number], // slate-900
-  accent: [59, 130, 246] as [number, number, number], // blue-500
-  textDark: [30, 41, 59] as [number, number, number], // slate-800
-  textMuted: [100, 116, 139] as [number, number, number], // slate-500
-  bgLight: [248, 250, 252] as [number, number, number], // slate-50
-  border: [226, 232, 240] as [number, number, number], // slate-200
+  primary: [17, 24, 39] as [number, number, number], // neutral-900 (slate-900 / dark text)
+  textDark: [38, 38, 38] as [number, number, number], // neutral-800
+  textMuted: [115, 115, 115] as [number, number, number], // neutral-400
+  bgLight: [248, 250, 252] as [number, number, number], // slate-50 / neutral-50
+  border: [229, 229, 229] as [number, number, number], // neutral-200
   white: [255, 255, 255] as [number, number, number],
-  success: [16, 185, 129] as [number, number, number], // emerald-500
+  success: [5, 150, 105] as [number, number, number], // emerald-600
+}
+
+// Dibuja el logo de la montaña corporativo para la cabecera del informe
+const drawMountainLogo = (doc: any, x: number, y: number) => {
+  doc.setDrawColor(...BRAND.primary)
+  doc.setLineWidth(1.2)
+  
+  // Montaña grande: pico en (x+6, y), base izquierda (x, y+10), base derecha (x+12, y+10)
+  doc.line(x, y + 10, x + 6, y)
+  doc.line(x + 6, y, x + 12, y + 10)
+  
+  // Montaña pequeña: pico en (x+11, y+4), base izquierda (x+7, y+10), base derecha (x+15, y+10)
+  doc.line(x + 7, y + 10, x + 11, y + 4)
+  doc.line(x + 11, y + 4, x + 15, y + 10)
 }
 
 export const generateProfessionalReport = async (sales: any[], stats: any) => {
@@ -33,79 +46,84 @@ export const generateProfessionalReport = async (sales: any[], stats: any) => {
     const pageW = doc.internal.pageSize.getWidth()
     const pageH = doc.internal.pageSize.getHeight()
 
-    // ── HEADER BAND ─────────────────────────────────────────────────────────
-    doc.setFillColor(...BRAND.primary)
-    doc.rect(0, 0, pageW, 55, 'F')
-    
-    // Accent line
-    doc.setFillColor(...BRAND.accent)
-    doc.rect(0, 55, pageW, 2, 'F')
+    // ── CABECERA PRINCIPAL (Estilo Limpio & Premium) ─────────────────────────
+    drawMountainLogo(doc, 20, 18)
 
-    // Logo / Brand
-    doc.setFontSize(28)
+    // Nombre de marca
+    doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...BRAND.white)
-    doc.text('MONTEVA', 20, 30)
+    doc.setTextColor(...BRAND.primary)
+    doc.text('Monteva', 40, 24)
 
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(148, 163, 184) // slate-400
-    doc.text('ERP SYSTEM', 20, 40)
-
-    // Report Title
-    doc.setFontSize(16)
+    doc.setFontSize(8)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...BRAND.white)
-    doc.text('Reporte Financiero', pageW - 20, 26, { align: 'right' })
+    doc.setTextColor(...BRAND.textMuted)
+    doc.text('ERP SYSTEM', 40, 28)
+
+    // Título del reporte (Alineado a la derecha)
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...BRAND.primary)
+    doc.text('Reporte Financiero', pageW - 20, 22, { align: 'right' })
 
     const dateStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
     const periodStr = stats.periodName ?? 'Histórico'
     
-    doc.setFontSize(9)
+    doc.setFontSize(8.5)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(148, 163, 184)
-    doc.text(`Período: ${periodStr}`, pageW - 20, 36, { align: 'right' })
-    doc.text(`Generado: ${dateStr}`, pageW - 20, 44, { align: 'right' })
+    doc.setTextColor(...BRAND.textMuted)
+    doc.text(`Período: ${periodStr}`, pageW - 20, 28, { align: 'right' })
+    doc.text(`Generado: ${dateStr}`, pageW - 20, 33, { align: 'right' })
 
-    // ── KPI CARDS ROW ────────────────────────────────────────────────────────
+    // Línea divisoria minimalista
+    doc.setDrawColor(243, 244, 246) // neutral-100
+    doc.setLineWidth(0.8)
+    doc.line(20, 38, pageW - 20, 38)
+
+    // ── TARJETAS KPI (Diseño de la Plataforma) ────────────────────────────────
     const kpis = [
       { label: 'INGRESOS TOTALES', value: `${(stats.totalRevenue ?? stats.monthlyRevenue ?? 0).toFixed(2)} €` },
       { label: 'GANANCIA NETA', value: `${(stats.totalProfit ?? stats.monthlyProfit ?? 0).toFixed(2)} €`, highlight: true },
       { label: 'VENTAS REGISTRADAS', value: `${sales.length}` },
     ]
 
-    const cardY = 70
-    const cardH = 32
-    const cardGap = 8
+    const cardY = 46
+    const cardH = 26
+    const cardGap = 6
     const cardW = (pageW - 40 - cardGap * (kpis.length - 1)) / kpis.length
 
     kpis.forEach((kpi, i) => {
       const x = 20 + i * (cardW + cardGap)
       
-      // Card background
-      doc.setFillColor(...BRAND.bgLight)
+      // Fondo e indicador de tarjeta
+      doc.setFillColor(...BRAND.white)
       doc.setDrawColor(...BRAND.border)
-      doc.setLineWidth(0.3)
+      doc.setLineWidth(0.4)
       doc.roundedRect(x, cardY, cardW, cardH, 3, 3, 'FD')
 
-      doc.setFontSize(8)
+      // Barra vertical de acento en el borde izquierdo
+      doc.setFillColor(...(kpi.highlight ? BRAND.success : BRAND.primary))
+      doc.rect(x, cardY, 2.5, cardH, 'F')
+
+      // Etiquetas y valores
+      doc.setFontSize(7.5)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(...BRAND.textMuted)
-      doc.text(kpi.label, x + 10, cardY + 12)
+      doc.text(kpi.label, x + 8, cardY + 9)
 
-      doc.setFontSize(16)
+      doc.setFontSize(13.5)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...(kpi.highlight ? BRAND.success : BRAND.textDark))
-      doc.text(kpi.value, x + 10, cardY + 24)
+      doc.setTextColor(...(kpi.highlight ? BRAND.success : BRAND.primary))
+      doc.text(kpi.value, x + 8, cardY + 19)
     })
 
-    // ── TABLA DE VENTAS ──────────────────────────────────────────────────────
-    const tableY = cardY + cardH + 16
+    // ── TABLA DE DETALLES (Minimalista y Estilizada) ──────────────────────────
+    const tableY = cardY + cardH + 14
 
-    doc.setFontSize(12)
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...BRAND.textDark)
-    doc.text('Detalle de Movimientos', 20, tableY - 6)
+    doc.setTextColor(...BRAND.primary)
+    doc.text('Detalle de Movimientos', 20, tableY - 4)
 
     autoTable(doc, {
       startY: tableY,
@@ -118,24 +136,24 @@ export const generateProfessionalReport = async (sales: any[], stats: any) => {
         `${(s.product.salePrice * s.quantity).toFixed(2)} €`,
         `${s.orderProfit.toFixed(2)} €`,
       ]),
-      theme: 'grid',
+      theme: 'plain',
       headStyles: {
-        fillColor: BRAND.primary,
-        textColor: BRAND.white,
-        fontSize: 8.5,
+        fillColor: [248, 250, 252], // slate-50
+        textColor: BRAND.primary,
+        fontSize: 8,
         fontStyle: 'bold',
         cellPadding: { top: 6, bottom: 6, left: 8, right: 8 },
-        lineColor: BRAND.primary,
+        lineColor: [229, 229, 229], // neutral-200
         lineWidth: 0.1,
       },
       bodyStyles: {
-        fontSize: 8.5,
+        fontSize: 8,
         textColor: BRAND.textDark,
         cellPadding: { top: 5, bottom: 5, left: 8, right: 8 },
-        lineColor: BRAND.border,
+        lineColor: [245, 245, 245], // neutral-100
         lineWidth: 0.1,
       },
-      alternateRowStyles: { fillColor: BRAND.bgLight },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
       columnStyles: {
         0: { cellWidth: 26 },
         1: { cellWidth: 'auto' },
@@ -146,40 +164,37 @@ export const generateProfessionalReport = async (sales: any[], stats: any) => {
       },
       margin: { left: 20, right: 20 },
       didDrawPage: (data: any) => {
-        // Footer en cada página
-        doc.setFillColor(...BRAND.bgLight)
-        doc.rect(0, pageH - 16, pageW, 16, 'F')
-        
-        doc.setDrawColor(...BRAND.border)
-        doc.setLineWidth(0.3)
-        doc.line(0, pageH - 16, pageW, pageH - 16)
+        // Línea divisoria del pie de página
+        doc.setDrawColor(243, 244, 246)
+        doc.setLineWidth(0.8)
+        doc.line(20, pageH - 16, pageW - 20, pageH - 16)
         
         doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
         doc.setTextColor(...BRAND.textMuted)
-        doc.text('Monteva ERP — Documento Confidencial', 20, pageH - 6)
-        doc.text(`Página ${data.pageNumber}`, pageW - 20, pageH - 6, { align: 'right' })
+        doc.text('Monteva ERP — Documento de Uso Interno', 20, pageH - 8)
+        doc.text(`Página ${data.pageNumber}`, pageW - 20, pageH - 8, { align: 'right' })
       }
     })
 
-    // ── RESUMEN FINAL ────────────────────────────────────────────────────────
+    // ── RESUMEN FINAL (Estilo de la Plataforma) ───────────────────────────────
     const finalY = (doc as any).lastAutoTable.finalY || tableY + 80
 
-    if (finalY + 40 < pageH - 20) {
-      doc.setFillColor(...BRAND.bgLight)
+    if (finalY + 36 < pageH - 20) {
+      doc.setFillColor(248, 250, 252) // slate-50
       doc.setDrawColor(...BRAND.border)
-      doc.setLineWidth(0.3)
-      doc.roundedRect(pageW - 90, finalY + 12, 70, 24, 3, 3, 'FD')
+      doc.setLineWidth(0.4)
+      doc.roundedRect(pageW - 90, finalY + 8, 70, 20, 3, 3, 'FD')
 
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7.5)
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...BRAND.textMuted)
-      doc.text('TOTAL GANANCIA NETA', pageW - 28, finalY + 22, { align: 'right' })
+      doc.text('TOTAL GANANCIA NETA', pageW - 28, finalY + 15, { align: 'right' })
       
-      doc.setFontSize(14)
+      doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(...BRAND.success)
-      doc.text(`${sales.reduce((a: number, s: any) => a + s.orderProfit, 0).toFixed(2)} €`, pageW - 28, finalY + 30, { align: 'right' })
+      doc.text(`${sales.reduce((a: number, s: any) => a + s.orderProfit, 0).toFixed(2)} €`, pageW - 28, finalY + 23, { align: 'right' })
     }
 
     doc.save(`Monteva_Reporte_${new Date().toISOString().slice(0, 10)}.pdf`)
@@ -196,25 +211,34 @@ export const generateReceiptPDF = async (sale: any) => {
 
     const doc = new jsPDF({ format: 'a5' })
     const pageW = doc.internal.pageSize.getWidth()
+    const pageH = doc.internal.pageSize.getHeight()
 
-    // Header
-    doc.setFillColor(15, 15, 15)
-    doc.rect(0, 0, pageW, 38, 'F')
-    doc.setFontSize(20)
+    // Cabecera limpia con el logo Mountain
+    drawMountainLogo(doc, 12, 12)
+    
+    doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(255, 255, 255)
-    doc.text('Monteva', 12, 18)
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(180, 180, 180)
-    doc.text('TICKET DE COMPRA', 12, 27)
+    doc.setTextColor(...BRAND.primary)
+    doc.text('Monteva', 30, 18)
+    
+    doc.setFontSize(7.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...BRAND.textMuted)
+    doc.text('TICKET DE VENTA', 30, 22)
+
     doc.setFontSize(8)
-    doc.setTextColor(180, 180, 180)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...BRAND.textMuted)
     doc.text(`#${sale.id.toString().padStart(6, '0')}`, pageW - 12, 18, { align: 'right' })
-    doc.text(new Date(sale.date).toLocaleString('es-ES'), pageW - 12, 27, { align: 'right' })
+    doc.text(new Date(sale.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }), pageW - 12, 23, { align: 'right' })
+
+    // Línea divisoria
+    doc.setDrawColor(241, 245, 249)
+    doc.setLineWidth(0.8)
+    doc.line(12, 28, pageW - 12, 28)
 
     autoTable(doc, {
-      startY: 48,
+      startY: 34,
       head: [['Producto', 'Cant.', 'P. Unit.', 'Total']],
       body: [[
         sale.product.name,
@@ -223,35 +247,53 @@ export const generateReceiptPDF = async (sale: any) => {
         `${(sale.product.salePrice * sale.quantity).toFixed(2)} €`
       ]],
       theme: 'plain',
-      headStyles: { fillColor: [245, 245, 245], textColor: [80, 80, 80], fontSize: 7.5, fontStyle: 'bold', cellPadding: 5 },
-      bodyStyles: { fontSize: 9, textColor: [30, 30, 30], cellPadding: 6 },
+      headStyles: { 
+        fillColor: [248, 250, 252], 
+        textColor: BRAND.primary, 
+        fontSize: 7.5, 
+        fontStyle: 'bold', 
+        cellPadding: 5,
+        lineColor: [229, 229, 229],
+        lineWidth: 0.1
+      },
+      bodyStyles: { 
+        fontSize: 8, 
+        textColor: BRAND.textDark, 
+        cellPadding: 5 
+      },
       columnStyles: {
         0: { cellWidth: 'auto' },
         1: { cellWidth: 14, halign: 'center' },
         2: { cellWidth: 24, halign: 'right' },
-        3: { cellWidth: 26, halign: 'right' },
-      }
+        3: { cellWidth: 26, halign: 'right', fontStyle: 'bold', textColor: BRAND.primary },
+      },
+      margin: { left: 12, right: 12 }
     })
 
-    const finalY = (doc as any).lastAutoTable.finalY || 90
+    const finalY = (doc as any).lastAutoTable.finalY || 60
 
-    // Total box
-    doc.setFillColor(15, 15, 15)
-    doc.roundedRect(12, finalY + 8, pageW - 24, 22, 2, 2, 'F')
+    // Caja de total (Fondo gris claro, borde fino de la plataforma)
+    doc.setFillColor(248, 250, 252)
+    doc.setDrawColor(...BRAND.border)
+    doc.setLineWidth(0.4)
+    doc.roundedRect(12, finalY + 6, pageW - 24, 16, 2, 2, 'FD')
+
     doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(180, 180, 180)
-    doc.text('TOTAL PAGADO', 20, finalY + 18)
-    doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(255, 255, 255)
-    doc.text(`${(sale.product.salePrice * sale.quantity).toFixed(2)} €`, pageW - 20, finalY + 22, { align: 'right' })
+    doc.setTextColor(...BRAND.textMuted)
+    doc.text('TOTAL COBRADO', 20, finalY + 16)
 
-    // Footer
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...BRAND.primary)
+    doc.text(`${(sale.product.salePrice * sale.quantity).toFixed(2)} €`, pageW - 20, finalY + 16, { align: 'right' })
+
+    // Pie de ticket
     doc.setFontSize(8)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(180, 180, 180)
-    doc.text('Gracias por su compra · Monteva', pageW / 2, finalY + 44, { align: 'center' })
+    doc.setTextColor(...BRAND.textMuted)
+    doc.text('¡Gracias por su compra!', pageW / 2, finalY + 34, { align: 'center' })
+    doc.text('Monteva ERP System', pageW / 2, finalY + 39, { align: 'center' })
 
     doc.save(`Ticket_${sale.id.toString().padStart(6, '0')}_Monteva.pdf`)
   } catch (error) {

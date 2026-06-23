@@ -11,14 +11,21 @@ import { SummaryTab } from '@/components/dashboard/SummaryTab'
 import { InventoryTab } from '@/components/dashboard/InventoryTab'
 import { AnalyticsTab } from '@/components/dashboard/AnalyticsTab'
 import { Modals } from '@/components/dashboard/Modals'
-import { deleteSale, clearSalesHistory } from '@/app/actions'
+import { deleteSale, clearSalesHistory, getDashboardData } from '@/app/actions'
+import { useQuery, useMutation, useQueryClient } from '@/lib/react-query'
 
 export default function DashboardClient({ initialData }: { initialData: any }) {
-  // Estado local mutable — permite updates optimistas sin recarga de página
-  const [sales, setSales] = useState<any[]>(initialData.sales)
-  const [products, setProducts] = useState<any[]>(initialData.products)
+  const queryClient = useQueryClient()
 
-  const { annualProfit: initialAnnualProfit } = initialData
+  // Gestión de estado mediante react-query
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboardData'],
+    queryFn: getDashboardData,
+    initialData: initialData
+  })
+
+  const sales = dashboardData?.sales ?? initialData.sales
+  const products = dashboardData?.products ?? initialData.products
 
   const [activeModal, setActiveModal] = useState<'sale' | 'product' | 'editProduct' | 'importExcel' | null>(null)
   const [selectedEditId, setSelectedEditId] = useState<number | string>("")
@@ -51,39 +58,56 @@ export default function DashboardClient({ initialData }: { initialData: any }) {
   const annualProfit = sales.filter((s: any) => new Date(s.date).getFullYear() === new Date().getFullYear())
     .reduce((acc: number, s: any) => acc + s.orderProfit, 0)
 
-  // ── Handlers optimistas ──────────────────────────────────────────────────
+  // ── Mutaciones react-query ───────────────────────────────────────────────
+  const deleteSaleMutation = useMutation({
+    mutationFn: deleteSale,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
+    }
+  })
+
+  const clearHistoryMutation = useMutation({
+    mutationFn: clearSalesHistory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
+    }
+  })
+
   async function handleDeleteSale(saleId: number) {
-    // Actualiza UI inmediatamente
-    setSales(prev => prev.filter(s => s.id !== saleId))
-    try {
-      const res = await deleteSale(saleId)
-      if (res && !res.success) {
-        setSales(initialData.sales)
+    // Optimistic cache update
+    queryClient.setQueryData(['dashboardData'], (old: any) => {
+      if (!old) return old
+      return {
+        ...old,
+        sales: old.sales.filter((s: any) => s.id !== saleId)
       }
+    })
+    try {
+      await deleteSaleMutation.mutateAsync(saleId)
     } catch {
-      // Revertir si falla
-      setSales(initialData.sales)
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
     }
   }
 
   async function handleClearHistory() {
-    setSales([])
-    try {
-      const res = await clearSalesHistory()
-      if (res && !res.success) {
-        setSales(initialData.sales)
+    // Optimistic cache update
+    queryClient.setQueryData(['dashboardData'], (old: any) => {
+      if (!old) return old
+      return {
+        ...old,
+        sales: []
       }
+    })
+    try {
+      await clearHistoryMutation.mutateAsync()
     } catch {
-      setSales(initialData.sales)
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
     }
   }
 
-  // Callback para que los modales refresquen el estado local tras crear/editar
-  function handleModalClose(newSale?: any, newProduct?: any, updatedProduct?: any, removedProductId?: number) {
-    if (newSale) setSales(prev => [newSale, ...prev])
-    if (newProduct) setProducts(prev => [...prev, newProduct].sort((a, b) => a.name.localeCompare(b.name)))
-    if (updatedProduct) setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p))
-    if (removedProductId) setProducts(prev => prev.filter(p => p.id !== removedProductId))
+  // Callback para refrescar usando react-query al cerrar modales
+  function handleModalClose() {
+    queryClient.invalidateQueries({ queryKey: ['dashboardData'] })
     setActiveModal(null)
   }
 
